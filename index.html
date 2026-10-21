@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brace One">
+<meta name="theme-color" content="#05070d">
 <title>Brace One</title>
 <style>
   :root { --eye:#FFD60A; --glow:rgba(255,214,10,.55); --bg:#05070d; }
@@ -158,9 +162,19 @@ function stopTalking() {
 
 /* ---------- Voice ---------- */
 let voice = null;
+// Male English voices, best first (iPhone, Mac, Windows, Chrome)
+const MALE_VOICES = ['Gordon', 'Lee', 'Aaron', 'Arthur', 'Daniel', 'Rishi', 'Oliver', 'Tom',
+  'Microsoft James', 'Microsoft William', 'Microsoft Guy', 'Microsoft David', 'Microsoft Mark',
+  'Google UK English Male', 'Alex'];
 function pickVoice() {
-  const vs = speechSynthesis.getVoices();
-  voice = vs.find(v => v.lang === 'en-AU') || vs.find(v => v.lang && v.lang.startsWith('en')) || null;
+  const vs = speechSynthesis.getVoices().filter(v => v.lang && v.lang.startsWith('en'));
+  const score = v => (/premium/i.test(v.name) ? 2 : /enhanced/i.test(v.name) ? 1 : 0);
+  voice = null;
+  for (const name of MALE_VOICES) {
+    const matches = vs.filter(v => v.name.includes(name)).sort((a, b) => score(b) - score(a));
+    if (matches.length) { voice = matches[0]; break; }
+  }
+  if (!voice) voice = vs.find(v => /\bmale\b/i.test(v.name)) || vs.find(v => v.lang === 'en-AU') || vs[0] || null;
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 
@@ -169,32 +183,61 @@ function speak(text) {
   if (!('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.pitch = 1.35; u.rate = 1.0; if (voice) u.voice = voice;
+  u.pitch = 0.85; u.rate = 0.95; // deeper, steady, brave if (voice) u.voice = voice;
   let ended = false;
-  const finish = () => { if (!ended) { ended = true; stopTalking(); } };
+  const finish = () => { if (!ended) { ended = true; stopTalking(); if (convo) setTimeout(listen, 400); } };
   u.onend = finish; u.onerror = finish;
   startTalking();
   setTimeout(finish, 1500 + text.length * 90); // safety net if onend never fires
   speechSynthesis.speak(u);
 }
 
-/* ---------- Listening ---------- */
+/* ---------- Listening (hands-free conversation mode) ---------- */
+// Tap the mic once: Brace One keeps listening after every reply.
+// Tap again to stop. If nobody talks 3 times in a row, he goes to sleep.
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-function listen() {
-  if (busy) return;
-  if (!SR) { setStatus('Voice isn’t supported here, type instead'); $('textIn').focus(); return; }
-  if (speaking) { speechSynthesis.cancel(); stopTalking(); }
-  const rec = new SR();
-  rec.lang = 'en-AU'; rec.interimResults = false; rec.maxAlternatives = 1;
-  rec.onstart = () => { $('mic').classList.add('on'); setStatus('Listening…'); look(0, 0); setMood('surprised'); };
-  rec.onresult = e => handle(e.results[0][0].transcript);
-  rec.onerror = e => {
-    setMood('sad', 2000);
-    setStatus(e.error === 'not-allowed' ? 'Please allow the microphone' : 'I didn’t catch that, tap to try again');
-  };
-  rec.onend = () => { $('mic').classList.remove('on'); if (!busy && $('status').textContent === 'Listening…') { setStatus('Tap the mic to talk'); setMood('happy'); } };
-  try { rec.start(); } catch (e) { setStatus('Tap the mic to talk'); }
+let convo = false, rec = null, misses = 0;
+
+function setMic() {
+  $('mic').textContent = convo ? '⏹' : '🎤';
+  $('mic').classList.toggle('on', convo);
 }
+function startConvo() {
+  if (!SR) { setStatus('Voice isn’t supported here, type instead'); $('textIn').focus(); return; }
+  convo = true; misses = 0; setMic(); keepAwake();
+  if (speaking) { speechSynthesis.cancel(); stopTalking(); }
+  setTimeout(listen, 300);
+}
+function stopConvo(msg) {
+  convo = false; setMic();
+  if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
+  setStatus(msg || 'Tap the mic to talk');
+}
+function listen() {
+  if (!convo || busy || speaking || rec) return;
+  rec = new SR();
+  rec.lang = 'en-AU'; rec.interimResults = false; rec.maxAlternatives = 1;
+  let heard = false;
+  rec.onstart = () => { setStatus('Listening… (tap ⏹ to stop)'); look(0, 0); setMood('surprised'); };
+  rec.onresult = e => { heard = true; misses = 0; handle(e.results[0][0].transcript); };
+  rec.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { stopConvo('Please allow the microphone'); setMood('sad', 2000); }
+  };
+  rec.onend = () => {
+    rec = null;
+    if (!convo || heard || busy || speaking) return;
+    misses++;
+    if (misses >= 3) { stopConvo('Zzz… tap the mic to wake me'); setMood('sleepy'); }
+    else setTimeout(listen, 300);
+  };
+  try { rec.start(); } catch (e) { rec = null; stopConvo(); }
+}
+// Keep the phone screen on while chatting (supported on newer iPhones)
+let wakeLock = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.onrelease = () => { wakeLock = null; }; } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && convo) keepAwake(); });
 function setStatus(t) { $('status').textContent = t; }
 
 /* ---------- Claude ---------- */
@@ -219,7 +262,7 @@ async function handle(text) {
     });
     if (!res.ok) {
       history.pop();
-      if (res.status === 401) { busy = false; setStatus('My key isn’t working'); setMood('sad'); speak('Uh oh, my key is not working. Ask Dad to check it.'); openSettings(); return; }
+      if (res.status === 401) { busy = false; stopConvo('My key isn’t working'); setStatus('My key isn’t working'); setMood('sad'); speak('Uh oh, my key is not working. Ask Dad to check it.'); openSettings(); return; }
       throw new Error('HTTP ' + res.status);
     }
     const data = await res.json();
@@ -259,10 +302,11 @@ $('saveKey').onclick = () => {
 };
 
 /* ---------- Wiring ---------- */
-$('mic').onclick = listen;
+$('mic').onclick = () => (convo ? stopConvo() : startConvo());
 $('textForm').onsubmit = e => { e.preventDefault(); const v = $('textIn').value; $('textIn').value = ''; $('textIn').blur(); handle(v); };
 $('wake').onclick = () => {
   $('startOverlay').classList.add('hidden');
+  keepAwake();
   if (!apiKey) { openSettings(); }
   setMood('excited', 3000);
   speak('Hi Nilan! I am Brace One. I am brave and ready for adventure!');
