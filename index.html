@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -11,7 +11,7 @@
 <title>Brace One</title>
 <style>
   :root { --eye:#FFD60A; --glow:rgba(255,214,10,.55); --bg:#05070d; }
-  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
   html,body { height:100%; background:var(--bg); overflow:hidden; color:#fff;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; touch-action:manipulation; }
 
@@ -23,7 +23,7 @@
   .pupil { position:absolute; width:11vmin; height:11vmin; background:#111; border-radius:50%;
     left:50%; top:50%; transform:translate(-50%,-50%); transition:transform .3s ease-out, width .25s, height .25s; }
   .pupil::after { content:''; position:absolute; width:3.5vmin; height:3.5vmin; background:#fff; border-radius:50%; top:1.8vmin; left:2vmin; }
-  .lid { position:absolute; left:-15%; width:130%; height:100%; background:var(--bg); transition:transform .22s ease; }
+  .lid { position:absolute; left:-15%; width:130%; height:100%; background:var(--bg); transition:transform .3s ease; }
   .lid.top { top:-100%; }
   .lid.bottom { top:100%; border-radius:50% 50% 0 0 / 35% 35% 0 0; }
 
@@ -34,11 +34,19 @@
   [data-mood="surprised"] .eye { transform:scale(1.15); }
   [data-mood="surprised"] .pupil { width:8vmin; height:8vmin; }
   [data-mood="thinking"] .lid.top { transform:translateY(18%); }
-  [data-mood="sleepy"]  .lid.top { transform:translateY(55%); }
+  [data-mood="sleepy"]  .lid.top { transform:translateY(62%); }
   [data-mood="sad"] .eye.left  .lid.top { transform:translateY(30%) rotate(-14deg); }
   [data-mood="sad"] .eye.right .lid.top { transform:translateY(30%) rotate(14deg); }
   #face.blink .lid.top { transform:translateY(100%) !important; transition:transform .08s; }
   @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4vmin)} }
+
+  /* Asleep: dimmer glow, gentle breathing */
+  #face.asleep .eye, #face.asleep #mouth { box-shadow:0 0 3vmin rgba(255,214,10,.25); }
+  #face.asleep #eyes { animation:breathe 4s ease-in-out infinite; }
+  @keyframes breathe { 50%{ transform:translateY(1.2vmin); } }
+  #zzz { position:absolute; top:14vmin; right:18vmin; font-size:7vmin; font-weight:700; color:var(--eye); opacity:0; pointer-events:none; }
+  #face.asleep ~ #zzz { animation:zzz 3s ease-in-out infinite; }
+  @keyframes zzz { 0%{opacity:0; transform:translate(0,2vmin)} 40%{opacity:.8} 100%{opacity:0; transform:translate(3vmin,-4vmin)} }
 
   /* Mouth */
   #mouth { width:20vmin; height:5vmin; background:var(--eye); box-shadow:0 0 4vmin var(--glow);
@@ -49,61 +57,42 @@
   [data-mood="sleepy"] #mouth { width:10vmin; height:2vmin; border-radius:2vmin; }
   #mouth.talking { border-radius:4vmin 4vmin 10vmin 10vmin; width:18vmin; }
 
-  /* ---------- Controls ---------- */
-  #bar { position:absolute; left:0; right:0; bottom:0; padding:3vmin 16px calc(3vmin + env(safe-area-inset-bottom));
-    display:flex; flex-direction:column; align-items:center; gap:10px; }
-  #caption { min-height:1.4em; max-width:640px; text-align:center; font-size:15px; color:#cfd3dc; opacity:.85; }
-  #status { font-size:14px; color:var(--eye); letter-spacing:.04em; }
-  #row { display:flex; gap:10px; width:100%; max-width:560px; align-items:center; }
-  #mic { flex:none; width:64px; height:64px; border-radius:50%; border:none; background:var(--eye); color:#111;
-    font-size:28px; box-shadow:0 0 18px var(--glow); }
-  #mic.on { animation:pulse 1s infinite; }
-  @keyframes pulse { 50%{ box-shadow:0 0 36px 8px var(--glow);} }
-  #textForm { flex:1; display:flex; gap:8px; }
-  #textIn { flex:1; min-width:0; padding:12px 14px; border-radius:22px; border:1px solid #333a48; background:#11151f; color:#fff; font-size:16px; }
-  #sendBtn { padding:0 16px; border-radius:22px; border:none; background:#2a3142; color:#fff; font-size:15px; }
-  #gear { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:12px; background:none; border:none; font-size:22px; opacity:.4; color:#fff; }
+  /* Listening light: a small glowing dot under the mouth */
+  #ear { position:absolute; left:50%; bottom:7vmin; width:3vmin; height:3vmin; margin-left:-1.5vmin; border-radius:50%;
+    background:var(--eye); opacity:0; transition:opacity .3s; }
+  #ear.on { opacity:1; animation:pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50%{ box-shadow:0 0 4vmin 1.5vmin var(--glow); transform:scale(1.3); } }
 
-  /* Overlays */
-  .overlay { position:absolute; inset:0; background:rgba(5,7,13,.92); display:flex; align-items:center; justify-content:center; padding:24px; z-index:10; }
+  /* Settings */
+  #gear { position:absolute; top:calc(8px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right));
+    background:none; border:none; font-size:18px; opacity:.18; color:#fff; padding:8px; z-index:5; }
+  .overlay { position:absolute; inset:0; background:rgba(5,7,13,.94); display:flex; align-items:center; justify-content:center; padding:24px; z-index:10; }
   .hidden { display:none !important; }
   .card { background:#11151f; border:1px solid #2a3142; border-radius:16px; padding:22px; width:100%; max-width:420px; display:flex; flex-direction:column; gap:12px; }
   .card h2 { font-size:20px; color:var(--eye); }
   .card p { font-size:14px; color:#aab0bd; line-height:1.4; }
-  .card input { padding:12px; border-radius:10px; border:1px solid #333a48; background:#05070d; color:#fff; font-size:16px; }
+  .card input { padding:12px; border-radius:10px; border:1px solid #333a48; background:#05070d; color:#fff; font-size:16px; -webkit-user-select:text; user-select:text; }
   .btn { padding:12px; border-radius:10px; border:none; background:var(--eye); color:#111; font-weight:600; font-size:16px; }
   .btn.ghost { background:#2a3142; color:#fff; }
-  #wake { font-size:22px; padding:18px 30px; border-radius:40px; }
 </style>
 </head>
 <body>
-<div id="face" data-mood="happy">
+<div id="face" class="asleep" data-mood="sleepy">
   <div id="eyes">
     <div class="eye left"><div class="pupil"></div><div class="lid top"></div><div class="lid bottom"></div></div>
     <div class="eye right"><div class="pupil"></div><div class="lid top"></div><div class="lid bottom"></div></div>
   </div>
   <div id="mouth"></div>
 </div>
+<div id="zzz">z</div>
+<div id="ear"></div>
 
 <button id="gear" aria-label="Settings">⚙︎</button>
-
-<div id="bar">
-  <div id="caption"></div>
-  <div id="status">Tap the mic to talk</div>
-  <div id="row">
-    <button id="mic" aria-label="Talk">🎤</button>
-    <form id="textForm"><input id="textIn" placeholder="…or type to Brace One" autocomplete="off"><button id="sendBtn">Send</button></form>
-  </div>
-</div>
-
-<div id="startOverlay" class="overlay">
-  <button id="wake" class="btn">Wake up Brace One ⚡</button>
-</div>
 
 <div id="settings" class="overlay hidden">
   <div class="card">
     <h2>Brace One settings</h2>
-    <p>Paste your Claude API key. It's saved only in this browser on this device, not in the page itself.</p>
+    <p>Paste your Claude API key. It's saved only on this device, not in the page itself.</p>
     <input id="keyIn" type="password" placeholder="sk-ant-..." autocomplete="off">
     <button id="saveKey" class="btn">Save</button>
     <button id="closeSettings" class="btn ghost">Close</button>
@@ -130,21 +119,23 @@ const face = $('face'), mouth = $('mouth'), pupils = document.querySelectorAll('
 let apiKey = '';
 try { apiKey = localStorage.getItem('braceOneKey') || ''; } catch (e) {}
 const history = [];
-let busy = false, speaking = false, talkTimer = null, moodTimer = null;
+let awake = false, busy = false, speaking = false, session = 0;
+let talkTimer = null, moodTimer = null, rec = null, misses = 0, greeted = false;
 
-/* ---------- Face behaviour ---------- */
+/* ---------- Face ---------- */
 function setMood(m, holdMs) {
   face.dataset.mood = MOODS.includes(m) ? m : 'happy';
   clearTimeout(moodTimer);
-  if (holdMs) moodTimer = setTimeout(() => { if (!busy && !speaking) face.dataset.mood = 'happy'; }, holdMs);
+  if (holdMs) moodTimer = setTimeout(() => { if (awake && !busy && !speaking) face.dataset.mood = 'happy'; }, holdMs);
 }
 function look(x, y) { pupils.forEach(p => p.style.transform = `translate(calc(-50% + ${x}vmin), calc(-50% + ${y}vmin))`); }
-function blink() { face.classList.add('blink'); setTimeout(() => face.classList.remove('blink'), 140); }
+function blink() { if (awake) { face.classList.add('blink'); setTimeout(() => face.classList.remove('blink'), 140); } }
+function setEar(on) { $('ear').classList.toggle('on', on); }
 
 (function blinkLoop() { setTimeout(() => { blink(); if (Math.random() < .2) setTimeout(blink, 250); blinkLoop(); }, 2200 + Math.random() * 3000); })();
 (function lookLoop() {
   setTimeout(() => {
-    if (!busy && !speaking) {
+    if (awake && !busy && !speaking) {
       if (Math.random() < .6) look((Math.random() - .5) * 12, (Math.random() - .5) * 10); else look(0, 0);
     }
     lookLoop();
@@ -157,15 +148,14 @@ function startTalking() {
 }
 function stopTalking() {
   speaking = false; clearInterval(talkTimer); mouth.classList.remove('talking'); mouth.style.height = '';
-  setMood(face.dataset.mood, 2500);
+  if (awake) setMood(face.dataset.mood, 2500);
 }
 
 /* ---------- Voice ---------- */
-let voice = null;
-// Male English voices, best first (iPhone, Mac, Windows, Chrome)
 const MALE_VOICES = ['Gordon', 'Lee', 'Aaron', 'Arthur', 'Daniel', 'Rishi', 'Oliver', 'Tom',
   'Microsoft James', 'Microsoft William', 'Microsoft Guy', 'Microsoft David', 'Microsoft Mark',
   'Google UK English Male', 'Alex'];
+let voice = null;
 function pickVoice() {
   const vs = speechSynthesis.getVoices().filter(v => v.lang && v.lang.startsWith('en'));
   const score = v => (/premium/i.test(v.name) ? 2 : /enhanced/i.test(v.name) ? 1 : 0);
@@ -178,75 +168,72 @@ function pickVoice() {
 }
 if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 
-function speak(text) {
-  $('caption').textContent = text;
-  if (!('speechSynthesis' in window)) return;
+function speak(text, then) {
+  if (!('speechSynthesis' in window)) { if (then) then(); return; }
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.pitch = 0.85; u.rate = 0.95; // deeper, steady, brave if (voice) u.voice = voice;
+  u.pitch = 0.85; u.rate = 0.95; if (voice) u.voice = voice;
   let ended = false;
-  const finish = () => { if (!ended) { ended = true; stopTalking(); if (convo) setTimeout(listen, 400); } };
+  const finish = () => { if (ended) return; ended = true; stopTalking(); if (then) then(); };
   u.onend = finish; u.onerror = finish;
   startTalking();
   setTimeout(finish, 1500 + text.length * 90); // safety net if onend never fires
   speechSynthesis.speak(u);
 }
 
-/* ---------- Listening (hands-free conversation mode) ---------- */
-// Tap the mic once: Brace One keeps listening after every reply.
-// Tap again to stop. If nobody talks 3 times in a row, he goes to sleep.
+/* ---------- Wake / sleep ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let convo = false, rec = null, misses = 0;
 
-function setMic() {
-  $('mic').textContent = convo ? '⏹' : '🎤';
-  $('mic').classList.toggle('on', convo);
+function wakeUp() {
+  if (!apiKey) { openSettings(); return; }
+  awake = true; misses = 0; session++;
+  face.classList.remove('asleep'); keepAwake();
+  setMood('excited', 3000); look(0, 0);
+  const my = session;
+  const hello = greeted ? 'I am awake! What shall we do?' : 'Hi Nilan! I am Brace One. I am brave and ready for adventure!';
+  greeted = true;
+  speak(hello, () => { if (awake && session === my) setTimeout(listen, 300); });
 }
-function startConvo() {
-  if (!SR) { setStatus('Voice isn’t supported here, type instead'); $('textIn').focus(); return; }
-  convo = true; misses = 0; setMic(); keepAwake();
-  if (speaking) { speechSynthesis.cancel(); stopTalking(); }
-  setTimeout(listen, 300);
-}
-function stopConvo(msg) {
-  convo = false; setMic();
+function goToSleep() {
+  awake = false; session++; busy = false;
   if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
-  setStatus(msg || 'Tap the mic to talk');
+  setEar(false);
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  stopTalking();
+  face.classList.add('asleep'); look(0, 2); setMood('sleepy');
 }
+
+/* ---------- Listening ---------- */
 function listen() {
-  if (!convo || busy || speaking || rec) return;
+  if (!awake || busy || speaking || rec) return;
+  if (!SR) { speak('I cannot hear on this phone. Sorry!', goToSleep); return; }
+  const my = session;
   rec = new SR();
   rec.lang = 'en-AU'; rec.interimResults = false; rec.maxAlternatives = 1;
   let heard = false;
-  rec.onstart = () => { setStatus('Listening… (tap ⏹ to stop)'); look(0, 0); setMood('surprised'); };
-  rec.onresult = e => { heard = true; misses = 0; handle(e.results[0][0].transcript); };
+  rec.onstart = () => { setEar(true); look(0, 0); setMood('happy'); };
+  rec.onresult = e => { heard = true; misses = 0; handle(e.results[0][0].transcript, my); };
   rec.onerror = e => {
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { stopConvo('Please allow the microphone'); setMood('sad', 2000); }
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      rec = null; setEar(false); setMood('sad');
+      speak('I cannot hear you. Ask Dad to let me use the microphone.', goToSleep);
+    }
   };
   rec.onend = () => {
-    rec = null;
-    if (!convo || heard || busy || speaking) return;
+    rec = null; setEar(false);
+    if (!awake || session !== my || heard || busy || speaking) return;
     misses++;
-    if (misses >= 3) { stopConvo('Zzz… tap the mic to wake me'); setMood('sleepy'); }
+    if (misses >= 3) { setMood('sleepy'); speak('I am getting sleepy. Tap me to wake me up!', goToSleep); }
     else setTimeout(listen, 300);
   };
-  try { rec.start(); } catch (e) { rec = null; stopConvo(); }
+  try { rec.start(); } catch (e) { rec = null; setEar(false); }
 }
-// Keep the phone screen on while chatting (supported on newer iPhones)
-let wakeLock = null;
-async function keepAwake() {
-  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.onrelease = () => { wakeLock = null; }; } } catch (e) {}
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && convo) keepAwake(); });
-function setStatus(t) { $('status').textContent = t; }
 
 /* ---------- Claude ---------- */
-async function handle(text) {
+async function handle(text, my) {
   text = (text || '').trim();
   if (!text || busy) return;
-  if (!apiKey) { openSettings(); return; }
-  busy = true; setStatus('Thinking…'); setMood('thinking'); look(5, -5);
-  $('caption').textContent = '“' + text + '”';
+  busy = true; setMood('thinking'); look(5, -5);
   history.push({ role: 'user', content: text });
   while (history.length > 16) history.splice(0, 2);
   try {
@@ -262,54 +249,51 @@ async function handle(text) {
     });
     if (!res.ok) {
       history.pop();
-      if (res.status === 401) { busy = false; stopConvo('My key isn’t working'); setStatus('My key isn’t working'); setMood('sad'); speak('Uh oh, my key is not working. Ask Dad to check it.'); openSettings(); return; }
+      if (res.status === 401) { busy = false; setMood('sad'); speak('Uh oh, my key is not working. Ask Dad to check it.', goToSleep); return; }
       throw new Error('HTTP ' + res.status);
     }
     const data = await res.json();
     const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
     history.push({ role: 'assistant', content: raw || '[happy] Hmm!' });
+    busy = false;
+    if (!awake || session !== my) return; // he was tapped to sleep while thinking
     const m = raw.match(/^\s*\[(\w+)\]\s*/);
     const reply = m ? raw.slice(m[0].length) : raw;
-    busy = false; look(0, 0); setMood(m ? m[1].toLowerCase() : 'happy');
-    setStatus('Tap the mic to talk');
-    speak(reply || 'Hmm, I am thinking!');
+    look(0, 0); setMood(m ? m[1].toLowerCase() : 'happy');
+    speak(reply || 'Hmm, I am thinking!', () => { if (awake && session === my) setTimeout(listen, 400); });
   } catch (err) {
     if (history.length && history[history.length - 1].role === 'user') history.pop();
-    busy = false; look(0, 0); setMood('sad', 3000); setStatus('Tap the mic to try again');
-    speak('Oops, my robot brain went fuzzy. Can you say that again?');
+    busy = false;
+    if (!awake || session !== my) return;
+    look(0, 0); setMood('sad', 3000);
+    speak('Oops, my robot brain went fuzzy. Can you say that again?', () => { if (awake && session === my) setTimeout(listen, 400); });
   }
 }
 
-/* ---------- Fun: poke the eyes ---------- */
-const POKES = ['Hey, that tickles!', 'Boop! Brave robot reporting for duty!', 'Whoa, you found my eyes!', 'Hee hee, again!'];
-$('eyes').addEventListener('pointerdown', e => {
-  if (busy) return;
-  const r = $('eyes').getBoundingClientRect();
-  look(((e.clientX - r.left) / r.width - .5) * 14, ((e.clientY - r.top) / r.height - .5) * 12);
-  setMood('excited', 2000);
-  if (!speaking) speak(POKES[Math.floor(Math.random() * POKES.length)]);
+/* ---------- Tap anywhere to wake / sleep ---------- */
+document.addEventListener('pointerup', e => {
+  if (e.target.closest('#gear, #settings')) return;
+  if (awake) { goToSleep(); } else { wakeUp(); }
+});
+
+/* Keep the screen on while awake */
+let wakeLock = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.onrelease = () => { wakeLock = null; }; } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && awake) keepAwake();
+  if (document.visibilityState === 'hidden' && awake) goToSleep();
 });
 
 /* ---------- Settings ---------- */
 function openSettings() { $('keyIn').value = apiKey; $('settings').classList.remove('hidden'); }
-$('gear').onclick = openSettings;
+$('gear').onclick = e => { e.stopPropagation(); if (awake) goToSleep(); openSettings(); };
 $('closeSettings').onclick = () => $('settings').classList.add('hidden');
 $('saveKey').onclick = () => {
   apiKey = $('keyIn').value.trim();
   try { localStorage.setItem('braceOneKey', apiKey); } catch (e) {}
   $('settings').classList.add('hidden');
-  setStatus(apiKey ? 'Tap the mic to talk' : 'Add a key in settings ⚙︎');
-};
-
-/* ---------- Wiring ---------- */
-$('mic').onclick = () => (convo ? stopConvo() : startConvo());
-$('textForm').onsubmit = e => { e.preventDefault(); const v = $('textIn').value; $('textIn').value = ''; $('textIn').blur(); handle(v); };
-$('wake').onclick = () => {
-  $('startOverlay').classList.add('hidden');
-  keepAwake();
-  if (!apiKey) { openSettings(); }
-  setMood('excited', 3000);
-  speak('Hi Nilan! I am Brace One. I am brave and ready for adventure!');
 };
 </script>
 </body>
