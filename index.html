@@ -12,19 +12,19 @@
 <link rel="icon" href="apple-touch-icon.png">
 <title>Brace One</title>
 <style>
-  :root { --eye:#FFD60A; --glow:rgba(255,214,10,.55); --bg:#05070d; }
+  :root { --u:min(1.25vw, 2vh); --eye:#FFD60A; --glow:rgba(255,214,10,.55); --bg:#05070d; }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
   html,body { height:100%; background:var(--bg); overflow:hidden; color:#fff;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; touch-action:manipulation; }
 
   /* ---------- Face ---------- */
-  #face { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7vmin; }
-  #eyes { display:flex; gap:14vmin; }
-  .eye { position:relative; width:26vmin; height:30vmin; background:var(--eye); border-radius:50%;
-    box-shadow:0 0 7vmin var(--glow); overflow:hidden; transition:transform .25s ease; }
-  .pupil { position:absolute; width:11vmin; height:11vmin; background:#111; border-radius:50%;
+  #face { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:calc(7 * var(--u)); }
+  #eyes { display:flex; gap:calc(20 * var(--u)); }
+  .eye { position:relative; width:calc(26 * var(--u)); height:calc(30 * var(--u)); background:var(--eye); border-radius:50%;
+    box-shadow:0 0 calc(7 * var(--u)) var(--glow); overflow:hidden; transition:transform .25s ease; }
+  .pupil { position:absolute; width:calc(11 * var(--u)); height:calc(11 * var(--u)); background:#111; border-radius:50%;
     left:50%; top:50%; transform:translate(-50%,-50%); transition:transform .3s ease-out, width .25s, height .25s; }
-  .pupil::after { content:''; position:absolute; width:3.5vmin; height:3.5vmin; background:#fff; border-radius:50%; top:1.8vmin; left:2vmin; }
+  .pupil::after { content:''; position:absolute; width:calc(3.5 * var(--u)); height:calc(3.5 * var(--u)); background:#fff; border-radius:50%; top:calc(1.8 * var(--u)); left:calc(2 * var(--u)); }
   .lid { position:absolute; left:-15%; width:130%; height:100%; background:var(--bg); transition:transform .3s ease; }
   .lid.top { top:-100%; }
   .lid.bottom { top:100%; border-radius:50% 50% 0 0 / 35% 35% 0 0; }
@@ -34,36 +34,36 @@
   [data-mood="excited"] .lid.bottom { transform:translateY(-45%); }
   [data-mood="excited"] #eyes { animation:bounce .45s ease-in-out 3; }
   [data-mood="surprised"] .eye { transform:scale(1.15); }
-  [data-mood="surprised"] .pupil { width:8vmin; height:8vmin; }
+  [data-mood="surprised"] .pupil { width:calc(8 * var(--u)); height:calc(8 * var(--u)); }
   [data-mood="thinking"] .lid.top { transform:translateY(18%); }
   [data-mood="sleepy"]  .lid.top { transform:translateY(62%); }
   [data-mood="sad"] .eye.left  .lid.top { transform:translateY(30%) rotate(-14deg); }
   [data-mood="sad"] .eye.right .lid.top { transform:translateY(30%) rotate(14deg); }
   #face.blink .lid.top { transform:translateY(100%) !important; transition:transform .08s; }
-  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4vmin)} }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-calc(4 * var(--u)))} }
 
   /* Asleep: dimmer glow, gentle breathing */
-  #face.asleep .eye, #face.asleep #mouth { box-shadow:0 0 3vmin rgba(255,214,10,.25); }
+  #face.asleep .eye, #face.asleep #mouth { box-shadow:0 0 calc(3 * var(--u)) rgba(255,214,10,.25); }
   #face.asleep #eyes { animation:breathe 4s ease-in-out infinite; }
-  @keyframes breathe { 50%{ transform:translateY(1.2vmin); } }
-  #zzz { position:absolute; top:14vmin; right:18vmin; font-size:7vmin; font-weight:700; color:var(--eye); opacity:0; pointer-events:none; }
+  @keyframes breathe { 50%{ transform:translateY(calc(1.2 * var(--u))); } }
+  #zzz { position:absolute; top:calc(6 * var(--u)); right:calc(5 * var(--u)); font-size:calc(7 * var(--u)); font-weight:700; color:var(--eye); opacity:0; pointer-events:none; }
   #face.asleep ~ #zzz { animation:zzz 3s ease-in-out infinite; }
-  @keyframes zzz { 0%{opacity:0; transform:translate(0,2vmin)} 40%{opacity:.8} 100%{opacity:0; transform:translate(3vmin,-4vmin)} }
+  @keyframes zzz { 0%{opacity:0; transform:translate(0,calc(2 * var(--u)))} 40%{opacity:.8} 100%{opacity:0; transform:translate(calc(3 * var(--u)),-calc(4 * var(--u)))} }
 
   /* Mouth */
-  #mouth { width:20vmin; height:5vmin; background:var(--eye); box-shadow:0 0 4vmin var(--glow);
-    border-radius:0 0 10vmin 10vmin; transition:height .1s, width .2s, border-radius .2s; }
-  [data-mood="sad"] #mouth { border-radius:10vmin 10vmin 0 0; height:4vmin; }
-  [data-mood="surprised"] #mouth { width:7vmin; height:7vmin; border-radius:50%; }
-  [data-mood="thinking"] #mouth { width:12vmin; height:2vmin; border-radius:2vmin; }
-  [data-mood="sleepy"] #mouth { width:10vmin; height:2vmin; border-radius:2vmin; }
-  #mouth.talking { border-radius:4vmin 4vmin 10vmin 10vmin; width:18vmin; }
+  #mouth { width:calc(26 * var(--u)); height:calc(5 * var(--u)); background:var(--eye); box-shadow:0 0 calc(4 * var(--u)) var(--glow);
+    border-radius:0 0 calc(10 * var(--u)) calc(10 * var(--u)); transition:height .1s, width .2s, border-radius .2s; }
+  [data-mood="sad"] #mouth { border-radius:calc(10 * var(--u)) calc(10 * var(--u)) 0 0; height:calc(4 * var(--u)); }
+  [data-mood="surprised"] #mouth { width:calc(7 * var(--u)); height:calc(7 * var(--u)); border-radius:50%; }
+  [data-mood="thinking"] #mouth { width:calc(12 * var(--u)); height:calc(2 * var(--u)); border-radius:calc(2 * var(--u)); }
+  [data-mood="sleepy"] #mouth { width:calc(10 * var(--u)); height:calc(2 * var(--u)); border-radius:calc(2 * var(--u)); }
+  #mouth.talking { border-radius:calc(4 * var(--u)) calc(4 * var(--u)) calc(10 * var(--u)) calc(10 * var(--u)); width:calc(24 * var(--u)); }
 
   /* Listening light: a small glowing dot under the mouth */
-  #ear { position:absolute; left:50%; bottom:7vmin; width:3vmin; height:3vmin; margin-left:-1.5vmin; border-radius:50%;
+  #ear { position:absolute; left:50%; bottom:calc(7 * var(--u)); width:calc(3 * var(--u)); height:calc(3 * var(--u)); margin-left:-calc(1.5 * var(--u)); border-radius:50%;
     background:var(--eye); opacity:0; transition:opacity .3s; }
   #ear.on { opacity:1; animation:pulse 1.2s ease-in-out infinite; }
-  @keyframes pulse { 50%{ box-shadow:0 0 4vmin 1.5vmin var(--glow); transform:scale(1.3); } }
+  @keyframes pulse { 50%{ box-shadow:0 0 calc(4 * var(--u)) calc(1.5 * var(--u)) var(--glow); transform:scale(1.3); } }
 
   /* Settings */
   #gear { position:absolute; top:calc(8px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right));
@@ -144,7 +144,7 @@ function setMood(m, holdMs) {
   clearTimeout(moodTimer);
   if (holdMs) moodTimer = setTimeout(() => { if (awake && !busy && !speaking) face.dataset.mood = 'happy'; }, holdMs);
 }
-function look(x, y) { pupils.forEach(p => p.style.transform = `translate(calc(-50% + ${x}vmin), calc(-50% + ${y}vmin))`); }
+function look(x, y) { pupils.forEach(p => p.style.transform = `translate(calc(-50% + ${x} * var(--u)), calc(-50% + ${y} * var(--u)))`); }
 function blink() { if (awake) { face.classList.add('blink'); setTimeout(() => face.classList.remove('blink'), 140); } }
 function setEar(on) { $('ear').classList.toggle('on', on); }
 
@@ -160,7 +160,7 @@ function setEar(on) { $('ear').classList.toggle('on', on); }
 
 function startTalking() {
   speaking = true; mouth.classList.add('talking'); clearInterval(talkTimer);
-  talkTimer = setInterval(() => { mouth.style.height = (2 + Math.random() * 7) + 'vmin'; }, 110);
+  talkTimer = setInterval(() => { mouth.style.height = 'calc(' + (2 + Math.random() * 7).toFixed(2) + ' * var(--u))'; }, 110);
 }
 function stopTalking() {
   speaking = false; clearInterval(talkTimer); mouth.classList.remove('talking'); mouth.style.height = '';
