@@ -73,6 +73,8 @@
   .card { background:#11151f; border:1px solid #2a3142; border-radius:16px; padding:22px; width:100%; max-width:420px; display:flex; flex-direction:column; gap:12px; }
   .card h2 { font-size:20px; color:var(--eye); }
   .card p { font-size:14px; color:#aab0bd; line-height:1.4; }
+  .card label { font-size:14px; color:#aab0bd; margin-top:4px; }
+  .card select { padding:12px; border-radius:10px; border:1px solid #333a48; background:#05070d; color:#fff; font-size:16px; }
   .card input { padding:12px; border-radius:10px; border:1px solid #333a48; background:#05070d; color:#fff; font-size:16px; -webkit-user-select:text; user-select:text; }
   .btn { padding:12px; border-radius:10px; border:none; background:var(--eye); color:#111; font-weight:600; font-size:16px; }
   .btn.ghost { background:#2a3142; color:#fff; }
@@ -96,6 +98,9 @@
     <h2>Brace One settings</h2>
     <p>Paste your Claude API key. It's saved only on this device, not in the page itself.</p>
     <input id="keyIn" type="password" placeholder="sk-ant-..." autocomplete="off">
+    <label for="voiceSel">Brace One's voice</label>
+    <select id="voiceSel"></select>
+    <button id="testVoice" class="btn ghost">▶︎ Test voice</button>
     <button id="saveKey" class="btn">Save</button>
     <button id="closeSettings" class="btn ghost">Close</button>
   </div>
@@ -166,10 +171,14 @@ function stopTalking() {
 const MALE_VOICES = ['Aaron', 'Evan', 'Nathan', 'Junior', 'Lee', 'Gordon', 'Daniel',
   'Microsoft Guy', 'Microsoft Mark', 'Google UK English Male'];
 let voice = null;
+let savedVoice = '';
+try { savedVoice = localStorage.getItem('braceOneVoice') || ''; } catch (e) {}
+function englishVoices() { return speechSynthesis.getVoices().filter(v => v.lang && v.lang.startsWith('en')); }
 function pickVoice() {
-  const vs = speechSynthesis.getVoices().filter(v => v.lang && v.lang.startsWith('en'));
+  const vs = englishVoices();
   const score = v => (/premium/i.test(v.name) ? 2 : /enhanced/i.test(v.name) ? 1 : 0);
   voice = null;
+  if (savedVoice) { voice = vs.find(v => v.voiceURI === savedVoice) || vs.find(v => v.name === savedVoice) || null; if (voice) return; }
   for (const name of MALE_VOICES) {
     const matches = vs.filter(v => v.name.includes(name)).sort((a, b) => score(b) - score(a));
     if (matches.length) { voice = matches[0]; break; }
@@ -181,6 +190,7 @@ if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged 
 function speak(text, then) {
   if (!('speechSynthesis' in window)) { if (then) then(); return; }
   speechSynthesis.cancel();
+  if (!voice) pickVoice();
   const u = new SpeechSynthesisUtterance(text);
   u.pitch = 1.15; u.rate = 1.0; if (voice) u.voice = voice;
   let ended = false;
@@ -297,12 +307,25 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ---------- Settings ---------- */
-function openSettings() { $('keyIn').value = apiKey; $('settings').classList.remove('hidden'); }
+function fillVoices() {
+  const sel = $('voiceSel'); sel.innerHTML = '';
+  const auto = document.createElement('option'); auto.value = ''; auto.textContent = 'Automatic'; sel.appendChild(auto);
+  englishVoices().sort((a, b) => a.name.localeCompare(b.name)).forEach(v => {
+    const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name + ' (' + v.lang + ')'; sel.appendChild(o);
+  });
+  sel.value = savedVoice && [...sel.options].some(o => o.value === savedVoice) ? savedVoice : '';
+}
+function openSettings() { $('keyIn').value = apiKey; fillVoices(); $('settings').classList.remove('hidden'); }
+$('voiceSel').onchange = () => { savedVoice = $('voiceSel').value; pickVoice(); };
+$('testVoice').onclick = () => { savedVoice = $('voiceSel').value; pickVoice(); speak('Hi Nilan! I am Brace One, and this is my voice.'); };
 $('gear').onclick = e => { e.stopPropagation(); if (awake) goToSleep(); openSettings(); };
 $('closeSettings').onclick = () => $('settings').classList.add('hidden');
 $('saveKey').onclick = () => {
   apiKey = $('keyIn').value.trim();
   try { localStorage.setItem('braceOneKey', apiKey); } catch (e) {}
+  savedVoice = $('voiceSel').value;
+  try { localStorage.setItem('braceOneVoice', savedVoice); } catch (e) {}
+  pickVoice();
   $('settings').classList.add('hidden');
 };
 </script>
