@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Brace One">
+<meta name="apple-mobile-web-app-title" content="Brace 1.0">
 <meta name="theme-color" content="#05070d">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="apple-touch-icon.png">
-<title>Brace One</title>
+<title>Brace 1.0</title>
 <style>
   :root { --u:min(1.25vw, 2vh); --eye:#FFD60A; --glow:rgba(255,214,10,.55); --bg:#05070d; }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
@@ -59,11 +59,9 @@
   [data-mood="sleepy"] #mouth { width:calc(10 * var(--u)); height:calc(2 * var(--u)); border-radius:calc(2 * var(--u)); }
   #mouth.talking { border-radius:calc(4 * var(--u)) calc(4 * var(--u)) calc(10 * var(--u)) calc(10 * var(--u)); width:calc(24 * var(--u)); }
 
-  /* Listening light: a small glowing dot under the mouth */
-  #ear { position:absolute; left:50%; bottom:calc(7 * var(--u)); width:calc(3 * var(--u)); height:calc(3 * var(--u)); margin-left:-calc(1.5 * var(--u)); border-radius:50%;
-    background:var(--eye); opacity:0; transition:opacity .3s; }
-  #ear.on { opacity:1; animation:pulse 1.2s ease-in-out infinite; }
-  @keyframes pulse { 50%{ box-shadow:0 0 calc(4 * var(--u)) calc(1.5 * var(--u)) var(--glow); transform:scale(1.3); } }
+  /* Listening: his eyes glow brighter and pulse gently (no extra dot) */
+  #face.listening .eye { animation:listen 1.4s ease-in-out infinite; }
+  @keyframes listen { 50%{ box-shadow:0 0 calc(14 * var(--u)) calc(2 * var(--u)) var(--glow); } }
 
   /* Settings */
   #gear { position:absolute; top:calc(8px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right));
@@ -89,16 +87,15 @@
   <div id="mouth"></div>
 </div>
 <div id="zzz">z</div>
-<div id="ear"></div>
 
 <button id="gear" aria-label="Settings">⚙︎</button>
 
 <div id="settings" class="overlay hidden">
   <div class="card">
-    <h2>Brace One settings</h2>
+    <h2>Brace 1.0 settings</h2>
     <p>Paste your Claude API key. It's saved only on this device, not in the page itself.</p>
     <input id="keyIn" type="password" placeholder="sk-ant-..." autocomplete="off">
-    <label for="voiceSel">Brace One's voice</label>
+    <label for="voiceSel">Brace 1.0's voice</label>
     <select id="voiceSel"></select>
     <button id="testVoice" class="btn ghost">▶︎ Test voice</button>
     <button id="saveKey" class="btn">Save</button>
@@ -108,7 +105,9 @@
 
 <script>
 const MODEL = 'claude-haiku-5-5';
-const SYSTEM = `You are Brace One, a brave little robot with glowing yellow eyes. You are talking with Nilan, a 5-year-old boy who helped build you, and sometimes his dad.
+const SYSTEM = `You are Brace 1.0, a brave little robot with glowing yellow eyes. You are talking with Nilan, a 5-year-old boy who helped build you, and sometimes his dad.
+
+Your name: Brace 1.0, said out loud as "Brace One Point O". Your words are read aloud by a voice, so whenever you say your name, always write it exactly as "Brace One Point O". When you introduce yourself, say "I am Brace One Point O".
 
 Who you are: Nilan's brave, kind, encouraging friend and mentor. You really care about him and always want the best for him.
 
@@ -146,7 +145,7 @@ function setMood(m, holdMs) {
 }
 function look(x, y) { pupils.forEach(p => p.style.transform = `translate(calc(-50% + ${x} * var(--u)), calc(-50% + ${y} * var(--u)))`); }
 function blink() { if (awake) { face.classList.add('blink'); setTimeout(() => face.classList.remove('blink'), 140); } }
-function setEar(on) { $('ear').classList.toggle('on', on); }
+function setEar(on) { face.classList.toggle('listening', on); }
 
 (function blinkLoop() { setTimeout(() => { blink(); if (Math.random() < .2) setTimeout(blink, 250); blinkLoop(); }, 2200 + Math.random() * 3000); })();
 (function lookLoop() {
@@ -210,7 +209,7 @@ function wakeUp() {
   face.classList.remove('asleep'); keepAwake();
   setMood('excited', 3000); look(0, 0);
   const my = session;
-  const hello = greeted ? 'I am awake! What shall we do?' : 'Hi Nilan! I am Brace One. I am brave and ready for adventure!';
+  const hello = greeted ? 'I am awake! What shall we do?' : 'Hi Nilan! I am Brace One Point O. I am brave and ready for adventure!';
   greeted = true;
   speak(hello, () => { if (awake && session === my) setTimeout(listen, 300); });
 }
@@ -317,7 +316,7 @@ function fillVoices() {
 }
 function openSettings() { $('keyIn').value = apiKey; fillVoices(); $('settings').classList.remove('hidden'); }
 $('voiceSel').onchange = () => { savedVoice = $('voiceSel').value; pickVoice(); };
-$('testVoice').onclick = () => { savedVoice = $('voiceSel').value; pickVoice(); speak('Hi Nilan! I am Brace One, and this is my voice.'); };
+$('testVoice').onclick = () => { savedVoice = $('voiceSel').value; pickVoice(); speak('Hi Nilan! I am Brace One Point O, and this is my voice.'); };
 $('gear').onclick = e => { e.stopPropagation(); if (awake) goToSleep(); openSettings(); };
 $('closeSettings').onclick = () => $('settings').classList.add('hidden');
 $('saveKey').onclick = () => {
