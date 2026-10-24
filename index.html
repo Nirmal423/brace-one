@@ -105,6 +105,8 @@
 
 <script>
 const MODEL = 'claude-haiku-5-5';
+const TOPIC = 'brace-one-nilan-7319';
+function sendCmd(c) { fetch('https://ntfy.sh/' + TOPIC, { method: 'POST', body: c }).catch(() => {}); }
 const SYSTEM = `You are Brace 1.0, a brave little robot with glowing yellow eyes. You are talking with Nilan, a 5-year-old boy who helped build you, and sometimes his dad.
 
 Your name: Brace 1.0, said out loud as "Brace One Point O". Your words are read aloud by a voice, so whenever you say your name, always write it exactly as "Brace One Point O". When you introduce yourself, say "I am Brace One Point O".
@@ -121,6 +123,7 @@ How you talk with Nilan:
 
 Things you know: Nilan has learned basketball and does karate. You can talk about them if he brings them up or if they help with a lesson, but they are not the main thing you talk about.
 Your wheels are not connected yet, so if asked to move, say your wheels are coming soon.
+You have a blue light. If Nilan asks you to turn your light on, put [light on] right after your mood tag. To turn it off, put [light off]. Only use these when he asks.
 
 Rules:
 - Your words are spoken out loud, so reply in 1 to 3 short sentences with simple words a 5-year-old understands.
@@ -277,7 +280,8 @@ async function handle(text, my) {
     busy = false;
     if (!awake || session !== my) return; // he was tapped to sleep while thinking
     const m = raw.match(/^\s*\[(\w+)\]\s*/);
-    const reply = m ? raw.slice(m[0].length) : raw;
+    let reply = m ? raw.slice(m[0].length) : raw;
+    reply = reply.replace(/\[(light on|light off)\]/gi, (t, c) => { sendCmd(c.toLowerCase()); return ''; }).trim();
     look(0, 0); setMood(m ? m[1].toLowerCase() : 'happy');
     speak(reply || 'Hmm, I am thinking!', () => { if (awake && session === my) setTimeout(listen, 400); });
   } catch (err) {
